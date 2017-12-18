@@ -22,14 +22,46 @@ let authModal = {
 			}			
 		});
 	},
-	setNewToken:function(userId, token){
+	getDateObjectToDateFormate(date){
+		return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
+	},
+	setNewToken:function(userId, token, expTime){
+		let self = this;
+		let tokenExpTime = (typeof expTime == 'number' && expTime > 0)?expTime:5000;
+
+		let getExpiretionTime= function(){
+			let tokenExp = new Date();
+			tokenExp = new Date(tokenExp.getTime()+(1000*tokenExpTime));
+			return self.getDateObjectToDateFormate(tokenExp);
+		}
+		let tokenExpireIn = getExpiretionTime();
 		if(token != null){
-			db.query('UPDATE user SET token="'+token+'" WHERE id="'+userId+'" ' , function(err, rows, fields){
+			db.query('UPDATE user SET token="'+token+'", tokenExpireIn="'+tokenExpireIn+'"  WHERE id="'+userId+'" ' , function(err, rows, fields){
 				if(err) throw err;
-				console.log("Rows: -> ", rows);
-				console.log("Fields: -> ", fields);
 			});
 		}
+	},
+	generateNewToken:function(result){
+		let tokenExpireTime = 60*60*24;
+		token=jwt.sign({username:result.data.username},process.env.SECRET_KEY,{
+            expiresIn: tokenExpireTime,
+        });
+		this.setNewToken(result.data.id, token, tokenExpireTime);
+		return token;
+	},
+	validateToken:function(result, callback){
+		let token=null;
+		if(result.data.token.length > 10){
+			if((new Date().getTime()) > (new Date(result.data.tokenExpireIn))){
+				console.log("Token Expired");
+				token = this.generateNewToken(result);
+			}else{
+				token = result.data.token;
+			}
+		}else{
+			token = this.generateNewToken(result);
+		}
+		callback({success:true,token:token});
 	},
 	isAuthenticateUser:function(data, callback){
 		let self = this;
@@ -37,16 +69,9 @@ let authModal = {
 			if(isExistUser){
 				self.isExistUsernamePassword(data, function(result){
 					if(result.success){	
-						let token=null;
-						if(result.data.token.length > 10){
-							token = result.data.token;
-						}else{
-							token=jwt.sign({username:result.data.username},process.env.SECRET_KEY,{
-			                    expiresIn:5000
-			                });
-							self.setNewToken(result.data.id, token);
-						}
-						callback({success:true,token:token});
+						self.validateToken(result, function(responce){
+							callback(responce);
+						});
 					}else{
 						let res = {success:false,message:'Authentication failed. Passwords did not match.'};
 						callback(res);

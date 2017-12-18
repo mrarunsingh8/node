@@ -1,4 +1,5 @@
 var express = require('express');
+var cors = require('cors');
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -9,15 +10,12 @@ var jwt        = require("jsonwebtoken");
 var basicAuth = require('express-basic-auth');
 
 var index = require('./routes/index');
-var users = require('./routes/users');
 var auth = require('./routes/auth');
 var api = require('./routes/api');
 
 var app = express();
 
-/*app.use(basicAuth({
-    users: { 'admin': 'supersecret' }
-}));*/
+app.use(cors());
 
 process.env.SECRET_KEY= "SECRETKEYSGOESHERE";//"thisismysecretkey1";
 
@@ -33,32 +31,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-/*app.use('/', router);
-
-router.use(function(req, res, next){
-	var expressBasicAuth = req.get('authorization');
-	if (!expressBasicAuth) {
-		res.set("WWW-Authenticate", "Basic realm=\"Authorization Required\"");
-		return res.status(401).send("Authorization Required");
-	}else{
-		var credentials = new Buffer(expressBasicAuth.split(" ").pop(), "base64").toString("ascii").split(":");
-		if (!(credentials[0] === "admin" && credentials[1] === "admin")) {
-	      return res.status(403).send("Access Denied (incorrect credentials)");
-	    }else{
-	    	next();
-	    }
-	}
-});*/
-
 app.use('/', index);
 
 app.use('/authenticate', auth);
 
 app.use('/api', router);
 
-router.use(function(req, res, next){
+router.use(function(req, res, next){	
 	var expressBasicAuth = req.get('authorization');
-	console.log('Headers', req.headers);
 	if (!expressBasicAuth) {
 		res.set("WWW-Authenticate", "Basic realm=\"Authorization Required\"");
 		return res.status(401).send("Authorization Required");
@@ -84,7 +64,6 @@ router.use(function(req, res, next){
 	}else{
 		return res.status(403).send({success: false,message: 'No token provided.'});
 	}
-	//next();
 });
 app.use('/api', api);
 
