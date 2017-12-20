@@ -41,11 +41,13 @@ router.use(function(req, res, next){
 	var expressBasicAuth = req.get('authorization');
 	if (!expressBasicAuth) {
 		res.set("WWW-Authenticate", "Basic realm=\"Authorization Required\"");
-		return res.status(401).send("Authorization Required");
+		//return res.status(401).send("Authorization Required");
+		return res.status(401).send({ success: false, message: 'Authorization Required'});
 	}else{
 		var credentials = new Buffer(expressBasicAuth.split(" ").pop(), "base64").toString("ascii").split(":");
 		if (!(credentials[0] === "admin" && credentials[1] === "admin")) {
-	      return res.status(403).send("Access Denied (incorrect credentials)");
+	      //return res.status(403).send("Access Denied (incorrect credentials)");
+	      return res.status(403).send({ success: false, message: 'Access Denied (incorrect credentials)'});
 	    }
 	}
 	next();
