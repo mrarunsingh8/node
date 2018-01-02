@@ -2,25 +2,29 @@ var jwt =  require('jsonwebtoken');
 var db  =  require('../../bin/mysql-db');
 
 let authModal = {
-	isExistUsername:function(username, callback){
-		db.query(" SELECT * FROM user WHERE username='"+username+"' ", function(err, rows, fields){
-			if (err) throw err;
-			if(rows.length){
-				callback(true);
-			}else{
-				callback(false);
-			}			
-		});
+	isExistUsername:function(username){
+		return new Promise(function (resolve, reject) {
+            db.query(" SELECT * FROM user WHERE username='"+username+"' ", function(err, rows, fields){
+                if (err) reject(err);
+                if(rows.length){
+                    resolve(true);
+                }else{
+                    resolve(false);
+                }
+            });
+        });
 	},
-	isExistUsernamePassword:function(data, callback){
-		db.query(" SELECT * FROM user WHERE username='"+data.username+"' AND password='"+data.password+"' ", function(err, rows, fields){
-			if (err) throw err;
-			if(rows.length){
-				callback({success:true, data:rows[0]});
-			}else{
-				callback({success:false, data:{}});
-			}			
-		});
+	isExistUsernamePassword:function(data){
+		return new Promise(function (resolve, reject) {
+            db.query(" SELECT * FROM user WHERE username='"+data.username+"' AND password='"+data.password+"' ", function(err, rows, fields){
+                if (err) reject(err);
+                if(rows.length){
+                    resolve({success:true, data:rows[0]});
+                }else{
+                    resolve({success:false, data:{}});
+                }
+            });
+        });
 	},
 	getDateObjectToDateFormate(date){
 		return date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+' '+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
@@ -63,25 +67,31 @@ let authModal = {
 		}
 		callback({success:true,token:token});
 	},
-	isAuthenticateUser:function(data, callback){
+	isAuthenticateUser:function(data){
 		let self = this;
-		this.isExistUsername(data.username, function(isExistUser){
-			if(isExistUser){
-				self.isExistUsernamePassword(data, function(result){
-					if(result.success){	
-						self.validateToken(result, function(responce){
-							callback(responce);
-						});
-					}else{
-						let res = {success:false,message:'Authentication failed. Passwords did not match.'};
-						callback(res);
-					}
-				});
-			}else{
-				let res = {success:false,message:'Authentication failed. User not found.'};
-				callback(res);
-			}
-		});
+		return new Promise(function (resolve, reject) {
+			self.isExistUsername(data.username).then(function(isExistUser){
+				if(isExistUser){
+					self.isExistUsernamePassword(data).then(function(result){
+                        if(result.success){
+                            self.validateToken(result, function(responce){
+                                resolve(responce);
+                            });
+                        }else{
+                            let res = {success:false,message:'Authentication failed. Passwords did not match.'};
+                            resolve(res);
+                        }
+                    }).catch(function (reason) {
+                        throw reason;
+					});
+                }else{
+                    let res = {success:false,message:'Authentication failed. User not found.'};
+                    resolve(res);
+                }
+            }).catch(function (reason) {
+            	throw reason;
+			});
+        });
 	},
 }
 

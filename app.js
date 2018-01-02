@@ -17,7 +17,7 @@ var app = express();
 
 app.use(cors());
 
-process.env.SECRET_KEY= "SECRETKEYSGOESHERE";//"thisismysecretkey1";
+process.env.SECRET_KEY= "SECRETKEYSGOESHERE1";//"thisismysecretkey1";
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
