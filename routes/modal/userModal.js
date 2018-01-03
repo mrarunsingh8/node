@@ -3,7 +3,7 @@ var db = require('../../bin/mysql-db');
 let userModal = {
 	getAllUser:function(){
 		return new Promise(function (resolve, reject) {
-            db.query('SELECT * from user limit 0,50', function(err, rows, fields) {
+            db.query('SELECT * from user ORDER BY id DESC limit 0,50 ', function(err, rows, fields) {
                 if (err) reject(err);
                 resolve(rows, fields);
             });
